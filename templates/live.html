@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Video</title>
+    <script src="/static/pako.js"></script>
+</head>
+<body>
+<h1>WebSocket Live Video</h1>
+<img id="img" style="object-fit: contain;">
+<script>
+			var ws_status = false;
+
+			function check_ws() {
+				if (!ws_status) {
+					ws_status = true;
+					var url = 'ws://'+window.location.host+'/live';
+					connect(url);
+				}
+			};
+			function connect(url) {
+				var ws = new WebSocket(url);
+				var image = document.getElementById('img');
+				//接收到消息的回调方法
+				ws.onmessage = function(res) { //ws订阅后接收数据
+					var blob = res.data; //接收blob对象
+					var reader = new FileReader();
+					reader.readAsArrayBuffer(blob); //讲blob对象数据转化成ArrayBuffer类数组
+					reader.onload = function(e) {
+						if (e.target.readyState == FileReader.DONE) {
+							let data = pako.inflate(reader.result) //使用pako.js将ArrayBuffer类数组转化成Uint8Array
+							strData = String.fromCharCode.apply(null, new Uint16Array(data)) //转化成JSON字符串
+							image.src = strData;
+						};
+					};
+				};
+				ws.onclose = function() {
+					ws_status = false;
+				};
+				ws.onerror = function() {
+					ws_status = false;
+				};
+			};
+			setInterval(check_ws, 2000);
+
+</script>
+</body>
+</html>
