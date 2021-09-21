@@ -102,6 +102,9 @@ async def websocket_endpoint(websocket: WebSocket):
     global_users.append(websocket)
     try:
         while True:
+            if websocket.app.state.frame is None:
+                await asyncio.sleep(0.1)
+                continue
             await websocket.send_bytes(websocket.app.state.frame)
             await asyncio.sleep(0.01)
     except ConnectionClosedOK:
