@@ -51,7 +51,7 @@ def update_video_frame(fast_app):
                     if img_bgr is None:
                         print('丢失帧')
                     else:
-                        fast_app.state.frame = img_bgr
+                        fast_app.state.frame = image_to_send_data(img_bgr)
             except Exception as e:
                 print(e)
                 time.sleep(5)
@@ -85,21 +85,24 @@ def draw_face_site(img):
     return img
 
 
+def image_to_send_data(frame):
+    try:
+        frame = draw_face_site(frame)
+        image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
+        base64_data = base64.b64encode(image)
+        s = 'data:image/jpeg;base64,'.encode() + base64_data
+        return gzip_compress(s)
+    except Exception as e:
+        return None
+
+
 @app.websocket("/live")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     global_users.append(websocket)
     try:
         while True:
-            try:
-                frame = draw_face_site(websocket.app.state.frame)
-                image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
-            except Exception as e:
-                continue
-            base64_data = base64.b64encode(image)
-            s = 'data:image/jpeg;base64,'.encode() + base64_data
-            await websocket.send_bytes(gzip_compress(s))
-            # await websocket.send_text('data:image/jpeg;base64,%s' % s)
+            await websocket.send_bytes(websocket.app.state.frame)
             await asyncio.sleep(0.01)
     except ConnectionClosedOK:
         pass
