@@ -87,7 +87,7 @@ def draw_face_site(img):
 
 def image_to_send_data(frame):
     try:
-        frame = draw_face_site(frame)
+        # frame = draw_face_site(frame)
         image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
         base64_data = base64.b64encode(image)
         s = 'data:image/jpeg;base64,'.encode() + base64_data
