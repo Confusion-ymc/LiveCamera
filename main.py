@@ -22,14 +22,29 @@ face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 global_users = []
 
 
+def open_camera():
+    camera = cv2.VideoCapture(0)
+    for i in range(5):
+        if camera.isOpened():
+            print('打开摄像头成功')
+            return camera
+        else:
+            time.sleep(1)
+    else:
+        # 摄像头打开失败
+        print('摄像头打开失败')
+        return None
+
+
 def update_video_frame(fast_app):
     while True:
         if not global_users:
             time.sleep(1)
             continue
         else:
-            camera = cv2.VideoCapture(0)
-            print('打开摄像头')
+            camera = open_camera()
+            if camera is None:
+                continue
             try:
                 while global_users:
                     _, img_bgr = camera.read()
