@@ -6,9 +6,9 @@ import cv2
 import fastapi.exceptions
 import uvicorn
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Form
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, RedirectResponse
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 import gzip
@@ -89,11 +89,16 @@ def image_to_send_data(frame):
 
 
 @app.get("/")
-async def get(request: Request, pwd: str):
-    if pwd == 'ymc4399':
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/")
+async def get(request: Request, password: str = Form(...)):
+    if password == 'ymc4399':
         return templates.TemplateResponse("live.html", {"request": request})
     else:
-        raise fastapi.exceptions.HTTPException(status_code=404)
+        return templates.TemplateResponse("login.html", {"request": request})
 
 
 # @app.get("/live")
