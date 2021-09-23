@@ -3,12 +3,10 @@ import base64
 import threading
 import time
 import cv2
-import fastapi.exceptions
 import uvicorn
-
+from fastapi.responses import JSONResponse
 from fastapi import FastAPI, WebSocket, Form
 from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 import gzip
@@ -86,6 +84,11 @@ def image_to_send_data(frame):
         return gzip_compress(s)
     except Exception as e:
         return None
+
+
+@app.get('/users/')
+async def login_page(request: Request):
+    return JSONResponse({'data': len(global_users)})
 
 
 @app.get("/")
