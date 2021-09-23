@@ -1,0 +1,22 @@
+version: '3'
+services:
+  web_build:
+    image: livecamera:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: [ "echo", "Build OK." ]
+
+  web:
+    depends_on:
+      - web_build
+    image: livecamera:latest
+    container_name: "live_cam"
+    restart: always
+    ports:
+      - "4399:4399"
+    working_dir: /code
+    # command: [ "sh", "-c", "python -u cron.py" ]
+
+
+
