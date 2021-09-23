@@ -18,6 +18,7 @@ services:
     volumes:
       - "/dev/video0:/dev/video0"
     working_dir: /code
+    privileged: true
     # command: [ "sh", "-c", "python -u cron.py" ]
 
 
