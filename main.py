@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import datetime
 import threading
 import time
 import cv2
@@ -24,6 +25,8 @@ global_users = []
 
 def open_camera():
     camera = cv2.VideoCapture(0)
+    camera.set(3, 1920)
+    camera.set(4, 1080)
     for i in range(5):
         if camera.isOpened():
             print('打开摄像头成功')
@@ -47,11 +50,7 @@ def update_video_frame(fast_app):
                 continue
             try:
                 while global_users:
-                    _, img_bgr = camera.read()
-                    if img_bgr is None:
-                        print('丢失帧')
-                    else:
-                        fast_app.state.frame = image_to_send_data(img_bgr)
+                    fast_app.state.frame = image_to_send_data(camera)
             except Exception as e:
                 print(e)
                 time.sleep(5)
@@ -75,20 +74,39 @@ def draw_face_site(img):
     return img
 
 
-def image_to_send_data(frame):
+def image_to_send_data(camera):
     try:
-        # frame = draw_face_site(frame)
-        image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
-        base64_data = base64.b64encode(image)
-        s = 'data:image/jpeg;base64,'.encode() + base64_data
-        return gzip_compress(s)
+        for i in range(100):
+            _, frame = camera.read()
+            if frame is None:
+                print('丢失帧')
+                continue
+            else:
+                # frame = draw_face_site(frame)
+                # text = 'Width: ' + str(camera.get(3)) + ' Height:' + str(camera.get(4))
+                date_str = str(datetime.datetime.now()).split('.')[0]
+                font = cv2.FONT_HERSHEY_SIMPLEX
+
+                x = 10
+                y = 35
+                frame = cv2.putText(frame, date_str, (x, y), font, 1,
+                                    (0, 0, 0), 2, cv2.LINE_AA)
+
+                text = 'Online: {}'.format(len(global_users))
+                frame = cv2.putText(frame, text, (x, y + 40), font, 1,
+                                    (0, 0, 0), 2, cv2.LINE_AA)
+
+                image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
+                base64_data = base64.b64encode(image)
+                s = 'data:image/jpeg;base64,'.encode() + base64_data
+                return gzip_compress(s)
     except Exception as e:
         return None
 
 
-@app.get('/users/')
-async def login_page(request: Request):
-    return JSONResponse({'data': len(global_users)})
+# @app.get('/users/')
+# async def users(request: Request):
+#     return JSONResponse({'data': len(global_users)})
 
 
 @app.get("/")
@@ -139,10 +157,6 @@ def register_task(fast_app: FastAPI) -> None:
 
 
 register_task(app)
-
-# url = 'rtmp://148676.livepush.myqcloud.com/live/ymc?txSecret=4913fbcff287c2895bc3cf7c65c7122c&txTime=6113823F'
-# ffmpeg -f avfoundation -video_size 1280x720 -framerate 30 -i 0 -vf scale=400:-2 -vcodec libx264 -preset ultrafast -f flv 'rtmp://148676.livepush.myqcloud.com/live/ymc?txSecret=4913fbcff287c2895bc3cf7c65c7122c&txTime=6113823F'
-
 
 if __name__ == "__main__":
     uvicorn.run('main:app', host="0.0.0.0", port=4399)

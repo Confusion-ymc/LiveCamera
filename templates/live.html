@@ -7,7 +7,6 @@
 </head>
 <body>
 <h1>WebSocket Live Video</h1>
-<span style="display: block; margin-bottom:20px" id="users">在线人数: 0</span>
 <img id="img" style="object-fit: contain;">
 <script>
 			var ws_status = false;
@@ -43,20 +42,6 @@
 				};
 			};
 			setInterval(check_ws, 2000);
-            function refreshOnTime(){
-                $.ajax({
-                //配置
-                    url: "/users/",
-                    context: document.body,
-                    success: function(res){
-                        console.log(res);
-                        $("#users").text("在线人数: "+res['data']);
-                  }
-                });
-
-            }
-            //5秒后重复执行该函数
-            setInterval(refreshOnTime, 5000);
 </script>
 </body>
 </html>
