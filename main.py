@@ -84,7 +84,7 @@ def image_to_send_data(camera):
             else:
                 # frame = draw_face_site(frame)
                 # text = 'Width: ' + str(camera.get(3)) + ' Height:' + str(camera.get(4))
-                date_str = str(datetime.datetime.now()).split('.')[0]
+                date_str = str(datetime.datetime.utcnow()+datetime.timedelta(hours=8)).split('.')[0]
                 font = cv2.FONT_HERSHEY_SIMPLEX
 
                 x = 10
