@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import datetime
 import threading
 import time
 import cv2
@@ -11,7 +10,8 @@ from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 import gzip
-
+from PIL import ImageGrab
+import numpy as np
 from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
@@ -21,6 +21,30 @@ templates = Jinja2Templates(directory="templates")
 
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 global_users = []
+FPS = 30
+
+
+def gzip_compress(buf):
+    return gzip.compress(buf)
+
+
+def draw_face_site(img):
+    # 转灰度图
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # 进行人脸检测
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    # 绘制人脸矩形框
+    for (x, y, w, h) in faces:
+        img = cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    return img
+
+
+def desktop_screen():
+    while True:
+        im = ImageGrab.grab()
+        frame = cv2.cvtColor(np.array(im), cv2.COLOR_BGR2RGB)
+        yield frame
+        time.sleep(1 / FPS)
 
 
 def open_camera():
@@ -39,74 +63,55 @@ def open_camera():
         return None
 
 
-def update_video_frame(fast_app):
-    while True:
-        if not global_users:
-            time.sleep(1)
-            continue
+def camera_screen():
+    camera = cv2.VideoCapture(0)
+    camera.set(3, 1920)
+    camera.set(4, 1080)
+    for i in range(10):
+        if camera.isOpened():
+            print('打开摄像头成功')
+            while True:
+                _, frame = camera.read()
+                yield frame
         else:
-            camera = open_camera()
-            if camera is None:
-                continue
-            try:
-                while global_users:
-                    fast_app.state.frame = image_to_send_data(camera)
-            except Exception as e:
-                print(e)
-                time.sleep(5)
-            finally:
-                camera.release()
-        print('关闭摄像头')
-
-
-def gzip_compress(buf):
-    return gzip.compress(buf)
-
-
-def draw_face_site(img):
-    # 转灰度图
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # 进行人脸检测
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    # 绘制人脸矩形框
-    for (x, y, w, h) in faces:
-        img = cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
-    return img
-
-
-def image_to_send_data(camera):
-    try:
-        for i in range(100):
-            _, frame = camera.read()
-            if frame is None:
-                print('丢失帧')
-                continue
-            else:
-                # frame = draw_face_site(frame)
-                # text = 'Width: ' + str(camera.get(3)) + ' Height:' + str(camera.get(4))
-                date_str = str(datetime.datetime.utcnow()+datetime.timedelta(hours=8)).split('.')[0]
-                font = cv2.FONT_HERSHEY_SIMPLEX
-
-                x = 10
-                y = 35
-                frame = cv2.putText(frame, date_str, (x, y), font, 1,
-                                    (0, 0, 0), 2, cv2.LINE_AA)
-
-                text = 'Online: {}'.format(len(global_users))
-                frame = cv2.putText(frame, text, (x, y + 40), font, 1,
-                                    (0, 0, 0), 2, cv2.LINE_AA)
-
-                image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
-                base64_data = base64.b64encode(image)
-                s = 'data:image/jpeg;base64,'.encode() + base64_data
-                return gzip_compress(s)
-    except Exception as e:
+            time.sleep(1 / FPS)
+    else:
+        # 摄像头打开失败
+        print('摄像头打开失败')
         return None
 
 
-# @app.get('/users/')
-# async def users(request: Request):
-#     return JSONResponse({'data': len(global_users)})
+def update_frame(fast_api, frame_generate):
+    while True:
+        try:
+            while global_users:
+                for frame in frame_generate():
+                    # frame = frame[0:im.height, int(im.width / 2) + 100:im.width]
+                    fast_api.state.frame = to_base64data(frame)
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+
+
+def to_base64data(frame):
+    frame = draw_face_site(frame)
+
+    # x = 10
+    # y = 35
+    # font = cv2.FONT_HERSHEY_SIMPLEX
+    # date_str = str(datetime.datetime.utcnow() + datetime.timedelta(hours=8)).split('.')[0]
+    # frame = cv2.putText(frame, date_str, (x, y), font, 1,
+    #                     (0, 0, 0), 2, cv2.LINE_AA)
+    #
+    # text = 'Online: {}'.format(len(global_users))
+    # frame = cv2.putText(frame, text, (x, y + 40), font, 1,
+    #                     (0, 0, 0), 2, cv2.LINE_AA)
+
+    image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])[1]
+    base64_data = base64.b64encode(image)
+    s = 'data:image/jpeg;base64,'.encode() + base64_data
+    # return gzip_compress(s)
+    return s.decode()
 
 
 @app.get("/")
@@ -122,11 +127,6 @@ async def get(request: Request, password: str = Form(...)):
         return templates.TemplateResponse("login.html", {"request": request})
 
 
-# @app.get("/live")
-# async def get(request: Request):
-#     return templates.TemplateResponse("live.html", {"request": request})
-
-
 @app.websocket("/live")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -136,8 +136,9 @@ async def websocket_endpoint(websocket: WebSocket):
             if websocket.app.state.frame is None:
                 await asyncio.sleep(0.1)
                 continue
-            await websocket.send_bytes(websocket.app.state.frame)
-            await asyncio.sleep(0.01)
+            # await websocket.send_bytes(websocket.app.state.frame)
+            await websocket.send_text(websocket.app.state.frame)
+            await asyncio.sleep(0.5)
     except ConnectionClosedOK:
         pass
     except WebSocketDisconnect:
@@ -153,7 +154,7 @@ def register_task(fast_app: FastAPI) -> None:
     @app.on_event('startup')
     async def startup_event():
         fast_app.state.frame = None
-        threading.Thread(target=update_video_frame, args=(fast_app,), daemon=True).start()
+        threading.Thread(target=update_frame, args=(fast_app, camera_screen), daemon=True).start()
 
 
 register_task(app)

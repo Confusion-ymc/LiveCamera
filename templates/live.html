@@ -4,6 +4,7 @@
     <title>Live Video</title>
     <script src="/static/pako.js"></script>
     <script src="/static/jquery-1.11.1.min.js"></script>
+    <link rel="shortcut icon" href="/static/long.svg"/>
 </head>
 <body>
 <h1>WebSocket Live Video</h1>
@@ -23,16 +24,17 @@
 				var image = document.getElementById('img');
 				//接收到消息的回调方法
 				ws.onmessage = function(res) { //ws订阅后接收数据
-					var blob = res.data; //接收blob对象
-					var reader = new FileReader();
-					reader.readAsArrayBuffer(blob); //讲blob对象数据转化成ArrayBuffer类数组
-					reader.onload = function(e) {
-						if (e.target.readyState == FileReader.DONE) {
-							let data = pako.inflate(reader.result) //使用pako.js将ArrayBuffer类数组转化成Uint8Array
-							strData = String.fromCharCode.apply(null, new Uint16Array(data)) //转化成JSON字符串
-							image.src = strData;
-						};
-					};
+				    image.src = res.data;
+					//var blob = res.data; //接收blob对象
+					//var reader = new FileReader();
+					//reader.readAsArrayBuffer(blob); //讲blob对象数据转化成ArrayBuffer类数组
+					//reader.onload = function(e) {
+					//	if (e.target.readyState == FileReader.DONE) {
+					//		let data = pako.inflate(reader.result) //使用pako.js将ArrayBuffer类数组转化成Uint8Array
+					//		strData = String.fromCharCode.apply(null, new Uint16Array(data)) //转化成JSON字符串
+					//		image.src = strData;
+					//	};
+					// };
 				};
 				ws.onclose = function() {
 					ws_status = false;
