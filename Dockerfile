@@ -29,7 +29,7 @@ RUN pip wheel numpy==${NUMPY_VERSION}
 RUN pip install numpy-*.whl
 RUN wget https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.tar.gz && \
 	tar xf ${OPENCV_VERSION}.tar.gz
-WORKDIR /opencv-${OPENCV_VERSION}/build
+WORKDIR /code/opencv-${OPENCV_VERSION}/build
 RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
 	-D CMAKE_INSTALL_PREFIX=_install \
 	-D ENABLE_NEON=ON \
