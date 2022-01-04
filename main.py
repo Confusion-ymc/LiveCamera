@@ -85,13 +85,14 @@ def to_base64data(frame):
     x = 10
     y = 35
     font = cv2.FONT_HERSHEY_SIMPLEX
+    red = (220, 74, 52)
     date_str = str(datetime.datetime.utcnow() + datetime.timedelta(hours=8)).split('.')[0]
     frame = cv2.putText(frame, date_str, (x, y), font, 1,
-                        (0, 0, 0), 2, cv2.LINE_AA)
+                        red, 2, cv2.LINE_AA)
 
     text = 'Online: {}'.format(len(global_users))
     frame = cv2.putText(frame, text, (x, y + 40), font, 1,
-                        (0, 0, 0), 2, cv2.LINE_AA)
+                        red, 2, cv2.LINE_AA)
 
     image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
     base64_data = base64.b64encode(image)
