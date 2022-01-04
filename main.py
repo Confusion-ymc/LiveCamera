@@ -4,13 +4,12 @@ import threading
 import time
 import cv2
 import uvicorn
-from fastapi.responses import JSONResponse
 from fastapi import FastAPI, WebSocket, Form
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 import gzip
-from PIL import ImageGrab
+# from PIL import ImageGrab
 import numpy as np
 from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
@@ -42,25 +41,10 @@ def draw_face_site(img):
 def desktop_screen():
     while True:
         im = ImageGrab.grab()
+
         frame = cv2.cvtColor(np.array(im), cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (int(im.width/2), int(im.height/2)), interpolation=cv2.INTER_CUBIC)
         yield frame
-        time.sleep(1 / FPS)
-
-
-def open_camera():
-    camera = cv2.VideoCapture(0)
-    camera.set(3, 1920)
-    camera.set(4, 1080)
-    for i in range(5):
-        if camera.isOpened():
-            print('打开摄像头成功')
-            return camera
-        else:
-            time.sleep(1)
-    else:
-        # 摄像头打开失败
-        print('摄像头打开失败')
-        return None
 
 
 def camera_screen():
@@ -74,7 +58,7 @@ def camera_screen():
                 _, frame = camera.read()
                 yield frame
         else:
-            time.sleep(1 / FPS)
+            time.sleep(3)
     else:
         # 摄像头打开失败
         print('摄像头打开失败')
@@ -88,6 +72,7 @@ def update_frame(fast_api, frame_generate):
                 for frame in frame_generate():
                     # frame = frame[0:im.height, int(im.width / 2) + 100:im.width]
                     fast_api.state.frame = to_base64data(frame)
+                    time.sleep(1 / FPS)
         except Exception as e:
             print(e)
             time.sleep(5)
@@ -107,11 +92,11 @@ def to_base64data(frame):
     # frame = cv2.putText(frame, text, (x, y + 40), font, 1,
     #                     (0, 0, 0), 2, cv2.LINE_AA)
 
-    image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])[1]
+    image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
     base64_data = base64.b64encode(image)
     s = 'data:image/jpeg;base64,'.encode() + base64_data
-    # return gzip_compress(s)
-    return s.decode()
+    return gzip_compress(s)
+    # return s.decode()
 
 
 @app.get("/")
@@ -136,9 +121,8 @@ async def websocket_endpoint(websocket: WebSocket):
             if websocket.app.state.frame is None:
                 await asyncio.sleep(0.1)
                 continue
-            # await websocket.send_bytes(websocket.app.state.frame)
-            await websocket.send_text(websocket.app.state.frame)
-            await asyncio.sleep(0.5)
+            await websocket.send_bytes(websocket.app.state.frame)
+            await asyncio.sleep(1 / FPS)
     except ConnectionClosedOK:
         pass
     except WebSocketDisconnect:
@@ -154,7 +138,8 @@ def register_task(fast_app: FastAPI) -> None:
     @app.on_event('startup')
     async def startup_event():
         fast_app.state.frame = None
-        threading.Thread(target=update_frame, args=(fast_app, camera_screen), daemon=True).start()
+        # camera_screen
+        threading.Thread(target=update_frame, args=(fast_app, desktop_screen), daemon=True).start()
 
 
 register_task(app)
