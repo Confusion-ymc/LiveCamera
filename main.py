@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import datetime
 import threading
 import time
 import cv2
@@ -38,13 +39,13 @@ def draw_face_site(img):
     return img
 
 
-def desktop_screen():
-    while True:
-        im = ImageGrab.grab()
-
-        frame = cv2.cvtColor(np.array(im), cv2.COLOR_BGR2RGB)
-        frame = cv2.resize(frame, (int(im.width/2), int(im.height/2)), interpolation=cv2.INTER_CUBIC)
-        yield frame
+# def desktop_screen():
+#     while True:
+#         im = ImageGrab.grab()
+#
+#         frame = cv2.cvtColor(np.array(im), cv2.COLOR_BGR2RGB)
+#         frame = cv2.resize(frame, (int(im.width/2), int(im.height/2)), interpolation=cv2.INTER_CUBIC)
+#         yield frame
 
 
 def camera_screen():
@@ -81,16 +82,16 @@ def update_frame(fast_api, frame_generate):
 def to_base64data(frame):
     frame = draw_face_site(frame)
 
-    # x = 10
-    # y = 35
-    # font = cv2.FONT_HERSHEY_SIMPLEX
-    # date_str = str(datetime.datetime.utcnow() + datetime.timedelta(hours=8)).split('.')[0]
-    # frame = cv2.putText(frame, date_str, (x, y), font, 1,
-    #                     (0, 0, 0), 2, cv2.LINE_AA)
-    #
-    # text = 'Online: {}'.format(len(global_users))
-    # frame = cv2.putText(frame, text, (x, y + 40), font, 1,
-    #                     (0, 0, 0), 2, cv2.LINE_AA)
+    x = 10
+    y = 35
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    date_str = str(datetime.datetime.utcnow() + datetime.timedelta(hours=8)).split('.')[0]
+    frame = cv2.putText(frame, date_str, (x, y), font, 1,
+                        (0, 0, 0), 2, cv2.LINE_AA)
+
+    text = 'Online: {}'.format(len(global_users))
+    frame = cv2.putText(frame, text, (x, y + 40), font, 1,
+                        (0, 0, 0), 2, cv2.LINE_AA)
 
     image = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])[1]
     base64_data = base64.b64encode(image)
