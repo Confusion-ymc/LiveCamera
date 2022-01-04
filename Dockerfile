@@ -4,6 +4,7 @@ WORKDIR /code/
 
 RUN apt-get update -y
 RUN apt install libgl1-mesa-glx -y
+RUN apt install cmake -y
 
 ADD requirements.txt /code/
 RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
