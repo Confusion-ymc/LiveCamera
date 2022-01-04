@@ -8,6 +8,7 @@ RUN apt install libgl1-mesa-glx -y
 ADD requirements.txt /code/
 RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple
 RUN pip install -r requirements.txt
+RUN python -m pip install --upgrade pip
 ADD . /code
 
 
