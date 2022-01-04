@@ -140,7 +140,7 @@ def register_task(fast_app: FastAPI) -> None:
     async def startup_event():
         fast_app.state.frame = None
         # camera_screen
-        threading.Thread(target=update_frame, args=(fast_app, desktop_screen), daemon=True).start()
+        threading.Thread(target=update_frame, args=(fast_app, camera_screen), daemon=True).start()
 
 
 register_task(app)
